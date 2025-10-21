@@ -1,0 +1,492 @@
+openapi: 3.0.4
+info:
+  title: Travel Social API
+  version: 1.0.0
+  description: A platform for travelers to create posts, like, comment, subscribe, search places, and view chronological feeds.
+
+servers:
+  - url: https://api.example.com/v1
+
+tags:
+  - name: post
+    description: Post operations
+  - name: user
+    description: User operations
+  - name: subscription
+    description: User subscriptions
+  - name: search
+    description: Search posts and places
+  - name: feed
+    description: Post feed
+
+paths:
+  /api/posts:
+    post:
+      tags:
+        - post
+      summary: Create a new post
+      description: Create a post with title, description, photos, and place.
+      operationId: createPost
+      requestBody:
+        description: Post creation payload
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      tags:
+        - post
+      summary: Get all posts
+      description: Retrieve all posts.
+      operationId: getPosts
+      responses:
+        "200":
+          description: Array of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/posts/{postId}:
+    get:
+      tags:
+        - post
+      summary: Get post by ID
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags:
+        - post
+      summary: Update a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Post update payload
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePostRequest"
+      responses:
+        "200":
+          description: Updated post object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - post
+      summary: Delete a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Post deleted successfully
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/posts/{postId}/likes:
+    post:
+      tags:
+        - post
+      summary: Like a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Like added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likesCount:
+                    type: integer
+                    example: 15
+    get:
+      tags:
+        - post
+      summary: Get likes for a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of likes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserBrief"
+
+  /api/posts/{postId}/comments:
+    post:
+      tags:
+        - post
+      summary: Add a comment to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Comment payload
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  example: "Great post!"
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+    get:
+      tags:
+        - post
+      summary: Get comments for a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Paginated list of comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Comment"
+
+  /api/users/{userId}/sbuscription:
+    post:
+      tags:
+        - subscription
+      summary: Subscribe to a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subscription successful
+
+  /api/users/{userId}:
+    get:
+      tags:
+        - user
+      summary: Get user profile by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile with authored posts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/User"
+                  - type: object
+                    properties:
+                      posts:
+                        type: array
+                        description: Posts authored by the user
+                        items:
+                          $ref: "#/components/schemas/Post"
+
+  /api/search:
+    get:
+      tags:
+        - search
+      summary: Search posts by place
+      parameters:
+        - name: place
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of posts related to the place
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /api/feed:
+    get:
+      tags:
+        - feed
+      summary: Get chronological feed by subscriptions
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Array of posts in feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+components:
+  schemas:
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100
+        title:
+          type: string
+          example: "My first post"
+        description:
+          type: string
+          example: "Post description here"
+        photos:
+          type: array
+          items:
+            type: string
+            format: uri
+            example: "https://example.com/uploads/photo1.jpg"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        likesCount:
+          type: integer
+          example: 42
+        place:
+          type: string
+          example: "Paris"
+        author:
+          $ref: "#/components/schemas/UserBrief"
+
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+          example: "New announcement"
+        description:
+          type: string
+          example: "Details available here"
+        photos:
+          type: array
+          items:
+            type: string
+            format: binary
+        place:
+          type: string
+          example: "Paris"
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+            format: binary
+        place:
+          type: string
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        text:
+          type: string
+          example: "Great post!"
+        author:
+          $ref: "#/components/schemas/UserBrief"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-09-28T10:00:00Z"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        username:
+          type: string
+          example: "traveler01"
+        fullName:
+          type: string
+          example: "Ivan Ivanov"
+        bio:
+          type: string
+          example: "Traveler and blogger"
+        joinedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T12:00:00Z"
+
+    UserBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        username:
+          type: string
+          example: "traveler01"
+        avatarUrl:
+          type: string
+          format: uri
+          example: "https://example.com/avatars/user10.png"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Request error"
